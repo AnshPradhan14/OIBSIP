@@ -26,6 +26,11 @@ def get_weather(api_key, location, unit):
         messagebox.showerror("Error", f"Failed to fetch weather data: {e}")
         return None
 
+def get_wind_direction(degrees):
+    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    index = round((degrees % 360) / 45)
+    return directions[index % 8]
+
 def display_weather(data, unit):
     if data is None:
         return "Failed to fetch weather data. Please try again later."
@@ -39,6 +44,9 @@ def display_weather(data, unit):
         humidity = data.get("main", {}).get("humidity", "Unknown")
         description = data.get("weather", [{}])[0].get("description", "Unknown")
         icon_id = data.get("weather", [{}])[0].get("icon", "01d")
+        wind_speed = data.get("wind", {}).get("speed", "Unknown")
+        wind_direction_deg = data.get("wind", {}).get("deg", "Unknown")
+        wind_direction_name = get_wind_direction(wind_direction_deg)
 
         # Load weather icon
         icon_url = f"http://openweathermap.org/img/wn/{icon_id}.png"
@@ -56,7 +64,9 @@ def display_weather(data, unit):
                 f"Weather for {city}, {country}:\n"
                 f"Temperature: {temp}°{unit}\n"
                 f"Humidity: {humidity}%\n"
-                f"Conditions: {description.capitalize()}"
+                f"Conditions: {description.capitalize()}\n"
+                f"Wind Speed: {wind_speed} m/s\n"
+                f"Wind Direction: {wind_direction_name} ({wind_direction_deg}°)"
             ),
             image=weather_icon,
             compound=tk.LEFT
@@ -99,4 +109,5 @@ get_weather_button.pack()
 weather_display = tk.Label(window, text="", wraplength=400)
 weather_display.pack()
 
+# Run the GUI
 window.mainloop()
