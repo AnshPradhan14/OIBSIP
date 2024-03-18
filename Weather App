@@ -79,7 +79,7 @@ def get_weather_data():
     weather_data = get_weather(api_key, location, unit)
     display_weather(weather_data, unit)
 
-api_key = "f3c3dbea52b0cf3c4d11ec769ed81419"  # Replace with your actual API key
+api_key = "f3c3dbea52b0cf3c4d11ec769ed81419"
 
 # Create GUI window
 window = tk.Tk()
@@ -109,5 +109,4 @@ get_weather_button.pack()
 weather_display = tk.Label(window, text="", wraplength=400)
 weather_display.pack()
 
-# Run the GUI
 window.mainloop()
