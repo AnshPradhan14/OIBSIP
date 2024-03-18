@@ -1,0 +1,141 @@
+import tkinter as tk
+from tkinter import messagebox
+from datetime import datetime
+
+attendance_records = {
+    "Monday": [],
+    "Tuesday": [],
+    "Wednesday": [],
+    "Thursday": [],
+    "Friday": [],
+    "Saturday": [],
+    "Sunday": []
+}
+
+def manage_attendance(day, emp_id, emp_name, action):
+    current_time = datetime.now().strftime("%H:%M:%S")
+    if action == "Check In":
+        attendance_records[day].append((emp_id, emp_name, current_time))
+        messagebox.showinfo("Success", f"{emp_name} checked in at {current_time}")
+    elif action == "Check Out":
+        for i, record in enumerate(attendance_records[day]):
+            if record[0] == emp_id:
+                attendance_records[day][i] = (*record, current_time)
+                messagebox.showinfo("Success", f"{emp_name} checked out at {current_time}")
+                return
+        messagebox.showwarning("Warning", "Employee not checked in")
+
+def calculate_work_time(records):
+    work_times = {}
+    for record in records:
+        emp_id, emp_name, check_in_time = record[:3]
+        if len(record) > 3:
+            check_out_time = record[3]
+            work_time = (datetime.strptime(check_out_time, "%H:%M:%S") - datetime.strptime(check_in_time, "%H:%M:%S")).total_seconds() / 3600
+            if emp_id in work_times:
+                work_times[emp_id][0] += work_time
+                work_times[emp_id][1].append((check_in_time, check_out_time))
+            else:
+                work_times[emp_id] = [work_time, [(check_in_time, check_out_time)]]
+    return work_times
+
+def generate_report(month):
+    report_text = f"Monthly Attendance Report for {month}:\n\n"
+    for day, records in attendance_records.items():
+        report_text += f"{day}:\n"
+        if records:
+            work_times = calculate_work_time(records)
+            sorted_work_times = sorted(work_times.items(), key=lambda x: x[0])  # Sort by employee ID
+            for emp_id, (work_time, check_times) in sorted_work_times:
+                emp_name = next((record[1] for record in records if record[0] == emp_id), "Unknown")
+                report_text += f"    Employee ID: {emp_id}, Employee Name: {emp_name}\n"
+                report_text += f"        Work Time: {round(work_time, 2)} hours\n"
+                for check_in_time, check_out_time in check_times:
+                    report_text += f"        Check-In: {check_in_time}, Check-Out: {check_out_time}\n"
+        else:
+            report_text += "    No attendance recorded\n"
+        report_text += "\n"
+    report_window = tk.Toplevel(root)
+    report_window.title("Monthly Attendance Report")
+    report_window.geometry("600x400")
+    report_label = tk.Label(report_window, text=report_text, justify="left", font=("Arial", 12))
+    report_label.pack(fill="both", expand=True)
+
+root = tk.Tk()
+root.title("Attendance Management System")
+root.geometry("400x300")
+
+tk.Label(root, text="Are you an Employee or Admin?").pack()
+employee_button = tk.Button(root, text="Employee")
+employee_button.pack()
+admin_button = tk.Button(root, text="Admin")
+admin_button.pack()
+
+def employee_menu():
+    employee_window = tk.Toplevel(root)
+    employee_window.title("Employee Menu")
+    employee_window.geometry("400x200")
+
+    def check_in_out(day):
+        emp_id = int(emp_id_entry.get())
+        emp_name = emp_name_entry.get()
+        manage_attendance(day, emp_id, emp_name, action_var.get())
+
+    day_label = tk.Label(employee_window, text="Select Day:")
+    day_label.grid(row=0, column=0)
+
+    for idx, day in enumerate(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], start=1):
+        tk.Button(employee_window, text=day, command=lambda d=day: check_in_out(d)).grid(row=0, column=idx)
+
+    tk.Label(employee_window, text="Employee ID:").grid(row=1, column=0)
+    emp_id_entry = tk.Entry(employee_window)
+    emp_id_entry.grid(row=1, column=1)
+
+    tk.Label(employee_window, text="Employee Name:").grid(row=2, column=0)
+    emp_name_entry = tk.Entry(employee_window)
+    emp_name_entry.grid(row=2, column=1)
+
+    action_var = tk.StringVar()
+    action_var.set("Check In")
+    tk.Radiobutton(employee_window, text="Check In", variable=action_var, value="Check In").grid(row=3, column=0)
+    tk.Radiobutton(employee_window, text="Check Out", variable=action_var, value="Check Out").grid(row=3, column=1)
+
+employee_button.config(command=employee_menu)
+
+def admin_menu():
+    def authenticate():
+        password = password_entry.get()
+        if password == "123":
+            admin_window.withdraw()  # Hide the password window
+            create_admin_menu()
+        else:
+            messagebox.showerror("Error", "Incorrect password!")
+
+    def create_admin_menu():
+        admin_window = tk.Toplevel(root)
+        admin_window.title("Admin Menu")
+        admin_window.geometry("400x200")
+
+        month_label = tk.Label(admin_window, text="Select Month:")
+        month_label.grid(row=0, column=0)
+        month_var = tk.StringVar()
+        month_dropdown = tk.OptionMenu(admin_window, month_var, "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        month_dropdown.grid(row=0, column=1)
+
+        report_button = tk.Button(admin_window, text="Generate Monthly Report", command=lambda: generate_report(month_var.get()))
+        report_button.grid(row=1, columnspan=2)
+
+    admin_window = tk.Toplevel(root)
+    admin_window.title("Admin Authentication")
+    admin_window.geometry("300x100")
+
+    password_label = tk.Label(admin_window, text="Enter password:")
+    password_label.grid(row=0, column=0)
+    password_entry = tk.Entry(admin_window, show="*")
+    password_entry.grid(row=0, column=1)
+    login_button = tk.Button(admin_window, text="Login", command=authenticate)
+    login_button.grid(row=1, columnspan=2)
+
+admin_button.config(command=admin_menu)
+
+root.mainloop()
